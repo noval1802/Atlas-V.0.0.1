@@ -2570,3 +2570,90 @@ tidak ada baris error
 RINGKAS tidak ada baris error baru sejak 2026-10-20T08:26:41Z
 ```
 
+### 2026-10-20 15:37 — PRD pusat komando
+
+- Perubahan: `PRD.md` ditambah di root `/home/localhost/Project/atlas`. Isinya syarat pusat komando yang sudah terpasang: peran, modul, peta situasi, BANGSIT, penyimpanan lokal, dan Keycloak. Aplikasi peta di `/home/localhost/osiris` disebut terpisah dan tidak diatur di dokumen ini. Tidak ada perubahan kode, skema, rahasia, atau layanan. Berkas belum di-commit dan belum di-push.
+- Fitur: tidak ada
+- Perbaikan: tidak ada
+- Error layanan:
+
+```text
+## atlas-app
+tidak ada baris error
+
+## atlas-realtime
+tidak ada baris error
+
+## atlas-postgres
+tidak ada baris error
+
+## atlas-proxy
+tidak ada baris error
+
+## atlas-keycloak
+tidak ada baris error
+
+## atlas-keycloak-db
+tidak ada baris error
+
+RINGKAS tidak ada baris error baru sejak 2026-10-20T08:29:54Z
+```
+
+### 2026-10-20 15:44 — status BANGSIT tidak lagi menyebut arsip yang tidak dipakai
+
+- Perubahan: audit ulang `/bangsit`. Formulir, pratinjau, dan PDF tetap ada. Penyimpanan yang tidak dipakai aplikasi dihapus dari status `README.md`, `PRD.md`, `docs/integration/bangsit-archive.md`, dan bagian prosedur folder di `docs/operations.md`. PDF dicatat sebagai berkas di disk aplikasi. Kode, skema, dan layanan tidak diubah. Belum di-commit dan belum di-push.
+- Fitur: tidak ada
+- Perbaikan: tidak ada
+- Error layanan:
+
+```text
+## atlas-app
+tidak ada baris error
+
+## atlas-realtime
+tidak ada baris error
+
+## atlas-postgres
+tidak ada baris error
+
+## atlas-proxy
+tidak ada baris error
+
+## atlas-keycloak
+tidak ada baris error
+
+## atlas-keycloak-db
+tidak ada baris error
+
+RINGKAS tidak ada baris error baru sejak 2026-10-20T08:37:57Z
+```
+
+### 2026-10-20 15:48 — README pusat komando diperbarui
+
+- Perubahan: `README.md` memakai status 20 Oktober 2026. Baris `/bangsit` menulis PDF di disk aplikasi. Bagian BANGSIT tidak lagi menyebut penyimpanan yang tidak dipakai. Status masuk menyebut Keycloak, dan dokumen kejadian disebut tersimpan di disk aplikasi. Tidak ada perubahan kode atau skema. `PRD.md` belum di-commit.
+- Fitur: tidak ada
+- Perbaikan: tidak ada
+- Error layanan:
+
+```text
+## atlas-app
+tidak ada baris error
+
+## atlas-realtime
+tidak ada baris error
+
+## atlas-postgres
+tidak ada baris error
+
+## atlas-proxy
+tidak ada baris error
+
+## atlas-keycloak
+tidak ada baris error
+
+## atlas-keycloak-db
+tidak ada baris error
+
+RINGKAS tidak ada baris error baru sejak 2026-10-20T08:44:46Z
+```
+

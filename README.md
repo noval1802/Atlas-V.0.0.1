@@ -4,7 +4,7 @@
 
 ATLAS adalah MVP aplikasi internal berbentuk command center untuk monitoring situasi nasional, kejadian, wilayah Kodam, early warning, sumber daya, dan laporan operasional.
 
-Dokumen ini mencatat status implementasi aktual per **17 September 2026**. Tata cara menyalakan salinan baru ada di [Menjalankan di perangkat lain](#menjalankan-di-perangkat-lain). Catatan layanan di mesin ini ada di [`docs/operations.md`](docs/operations.md) dan [`docs/MIGRASI.md`](docs/MIGRASI.md).
+Dokumen ini mencatat status implementasi aktual per **20 Oktober 2026**. Tata cara menyalakan salinan baru ada di [Menjalankan di perangkat lain](#menjalankan-di-perangkat-lain). Catatan layanan di mesin ini ada di [`docs/operations.md`](docs/operations.md) dan [`docs/MIGRASI.md`](docs/MIGRASI.md).
 
 ## Status aplikasi
 
@@ -12,12 +12,11 @@ Dokumen ini mencatat status implementasi aktual per **17 September 2026**. Tata 
 - Deployment produksi menggunakan image standalone Next.js, Nginx HTTPS, PostgreSQL, dan layanan WebSocket.
 - PostgreSQL lokal berjalan melalui Docker.
 - Dashboard, laporan, sumber daya, user, kejadian, monitoring, alert, titik peta, dan layout annotation memakai PostgreSQL/Prisma. `localStorage` hanya menjadi cache interaksi annotation di browser.
-- Phase 1 dokumentasi, Phase 2 autentikasi/otorisasi, Phase 3A–3B SSO, Phase 4A–4B Document Storage, serta security hardening Phase 5 telah diimplementasikan.
-- Build, TypeScript, dan ESLint terakhir dinyatakan lulus.
+- Masuk produksi memakai Keycloak. Dokumen kejadian dan PDF BANGSIT disimpan di disk aplikasi.
 
 ## Menjalankan di perangkat lain
 
-`git clone` mengambil kode aplikasi. Rahasia, sertifikat, basis data yang sedang berjalan, akun Keycloak, dan Nextcloud tidak ada di repositori ini. Clone saja belum menyalakan ATLAS.
+`git clone` mengambil kode aplikasi. Rahasia, sertifikat, basis data yang sedang berjalan, dan akun Keycloak tidak ada di repositori ini. Clone saja belum menyalakan ATLAS.
 
 Perangkat baru membutuhkan Docker beserta Docker Compose, OpenSSL, serta Node.js 22 dan npm. Image aplikasi memakai Node.js 22. Perintah Prisma dijalankan di mesin tuan rumah, jadi Node.js juga dipasang di sana.
 
@@ -92,13 +91,13 @@ Akun pengguna ada di Keycloak, bukan di repositori ini. Di mesin asal, Keycloak 
 
 Di perangkat baru, salin folder identity itu atau buat realm `atlas` yang baru. Setelah Keycloak hidup, arahkan redirect klien `atlas` ke `https://<IP-baru>/api/auth/callback/oidc` dan `webOrigins` ke `https://<IP-baru>`.
 
-`scripts/sync-lan-address.sh` mengubah URL ATLAS, Keycloak, dan Nextcloud sekaligus. Jalankan hanya bila ketiga layanan sudah ada di mesin yang sama. Skrip itu mencari Keycloak di folder `identity` di sebelah clone, dan Nextcloud di `/home/localhost/nexops`.
+`scripts/sync-lan-address.sh` juga mengubah layanan di luar pusat komando. Jangan menjalankannya pada pemasangan baru.
 
 ### Membawa data yang sudah ada
 
 Untuk menyalin isi mesin asal, pulihkan dump basis data `atlas` dari container `atlas-postgres` setelah Postgres baru sehat, lalu salin volume unggahan Compose. Di mesin asal volume itu bernama `atlas_atlas_kodam_uploads`. Lewati `npm run db:seed` bila dump sudah berisi data operasional.
 
-Nextcloud tidak diperlukan agar pusat komando berjalan. Dokumen kejadian disimpan di disk aplikasi. Salin `/home/localhost/nexops` hanya bila arsip Nextcloud lama juga pindah.
+Dokumen kejadian dan PDF BANGSIT disimpan di disk aplikasi.
 
 ## Stack
 
@@ -124,8 +123,8 @@ Nextcloud tidak diperlukan agar pusat komando berjalan. Dokumen kejadian disimpa
 | `/kodam`         | Daftar dan editor Data Kodam              | Berfungsi                                        |
 | `/kodam/[id]`    | Detail Kodam                              | Berfungsi                                        |
 | `/kejadian`      | Incident Manager                          | PostgreSQL CRUD, RBAC, audit                     |
-| `/kejadian/[id]` | Detail kejadian dan dokumen terkait       | Berfungsi dengan PostgreSQL, RBAC, dan Nextcloud |
-| `/bangsit`       | Form, preview, generate dan arsip BANGSIT | PDF + Nextcloud berfungsi                        |
+| `/kejadian/[id]` | Detail kejadian dan dokumen terkait       | PostgreSQL, RBAC, berkas di disk aplikasi        |
+| `/bangsit`       | Form, pratinjau, generate, dan arsip BANGSIT | PDF di disk aplikasi                             |
 | `/bencana`       | Monitoring bencana                        | PostgreSQL CRUD, RBAC, audit                     |
 | `/karhutla`      | Monitoring karhutla                       | PostgreSQL CRUD, RBAC, audit                     |
 | `/unras`         | Monitoring unjuk rasa                     | PostgreSQL CRUD, RBAC, audit                     |
@@ -292,7 +291,7 @@ Layout annotation disimpan ke PostgreSQL melalui `/api/map-annotations/layout`. 
 - Detail kejadian PostgreSQL menyediakan panel **Dokumen Terkait** untuk list, upload, dan download.
 - Koordinat marker dan line card Kejadian selalu diambil dari koordinat Kodam terpilih; input koordinat manual tidak digunakan.
 - Upload dibatasi berdasarkan role serta scope Kodam; operator Kodam XII hanya dapat mengakses kejadian `XII/TPR`.
-- Folder Nextcloud memakai kode aman, misalnya `XII/TPR` menjadi `KODAM_XII_TPR`.
+- Folder arsip di disk aplikasi memakai kode aman, misalnya `XII/TPR` menjadi `KODAM_XII_TPR`.
 
 ### Laporan
 
@@ -301,10 +300,10 @@ Layout annotation disimpan ke PostgreSQL melalui `/api/map-annotations/layout`. 
 - Laporan uji dengan dokumentasi gambar tersedia di `/downloads/ATLAS-laporan-uji.pdf`.
 - PDF telah diverifikasi sebagai PDF 1 halaman dan dapat diakses melalui HTTP.
 
-### BANGSIT dan Nextcloud
+### BANGSIT
 
 - Form BANGSIT menghasilkan PDF nyata di backend dan tetap menyinkronkan annotation ke Peta Situasi.
-- PDF disimpan ke folder Nextcloud per Kodam/tahun/bulan dan referensinya dicatat pada tabel `BangsitArchive`.
+- PDF disimpan di disk aplikasi, dalam folder per Kodam, tahun, dan bulan. Referensinya dicatat pada tabel `BangsitArchive`.
 - List, generate, dan download ditegakkan dengan permission serta scope Kodam di backend.
 - Generate dan download dicatat ke `AuditLog` dengan correlation ID.
 - Tombol PNG dan PPTX dinonaktifkan sampai generator format tersebut tersedia.
@@ -445,7 +444,6 @@ npm run db:seed
 - Pindahkan cache annotation terakhir ke state server/realtime push; `localStorage` hanya dipakai untuk respons drag instan.
 - Provision Keycloak/IdP organisasi dan isi konfigurasi OIDC production ATLAS.
 - Terapkan helper RBAC yang sama pada Route Handler selain modul kejadian saat modul tersebut dipindahkan dari `localStorage` ke API.
-- Tambahkan provisioning/share folder Nextcloud per grup Kodam setelah rancangan migrasi grup disetujui; pertahankan login break-glass.
 - Tambahkan generator dan arsip BANGSIT format PNG serta PPTX; PDF sudah aktif.
 - Perluas dokumen terkait ke modul selain kejadian dan tambahkan penghapusan/versi dokumen dengan audit log.
 - Tambahkan PostGIS untuk query geospasial.
