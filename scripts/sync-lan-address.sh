@@ -4,7 +4,7 @@ umask 077
 
 atlas_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 identity_dir="${atlas_dir}/../identity"
-nexops_dir="${atlas_dir}/../nexops"
+nexops_dir="/home/localhost/nexops"
 lan_ip="${ATLAS_LAN_IP:-$(ip route get 1.1.1.1 | awk '{ for (i = 1; i <= NF; i++) if ($i == "src") { print $(i + 1); exit } }')}"
 
 if [[ ! "${lan_ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
