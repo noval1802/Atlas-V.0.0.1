@@ -2541,3 +2541,32 @@ tidak ada baris error
 RINGKAS tidak ada baris error baru sejak 2026-10-20T08:18:28Z
 ```
 
+### 2026-10-20 15:29 — catatan perubahan dihapus dari README
+
+- Perubahan: bagian `Catatan perubahan` di `README.md` pusat komando dihapus, termasuk entri 20 Oktober 2026 sampai 22 Agustus 2026. Aturan pencatatan berikutnya tidak lagi menyuruh menambah entri di bagian itu. Migrasi basis data dan perubahan environment variable dicatat di `docs/MIGRASI.md`. Tata cara menjalankan di perangkat lain tetap ada. Tidak ada perubahan kode, skema, atau rahasia. Server peta port 3005 tidak dihentikan. Port 3000 tidak dinyalakan.
+- Fitur: tidak ada
+- Perbaikan: tidak ada
+- Error layanan:
+
+```text
+## atlas-app
+tidak ada baris error
+
+## atlas-realtime
+tidak ada baris error
+
+## atlas-postgres
+tidak ada baris error
+
+## atlas-proxy
+tidak ada baris error
+
+## atlas-keycloak
+tidak ada baris error
+
+## atlas-keycloak-db
+tidak ada baris error
+
+RINGKAS tidak ada baris error baru sejak 2026-10-20T08:26:41Z
+```
+
