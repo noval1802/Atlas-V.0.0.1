@@ -4,7 +4,7 @@
 
 ATLAS adalah MVP aplikasi internal berbentuk command center untuk monitoring situasi nasional, kejadian, wilayah Kodam, early warning, sumber daya, dan laporan operasional.
 
-Dokumen ini mencatat status implementasi aktual per **17 September 2026**. Petunjuk produksi lengkap berada di [`docs/operations.md`](docs/operations.md).
+Dokumen ini mencatat status implementasi aktual per **17 September 2026**. Tata cara menyalakan salinan baru ada di [Menjalankan di perangkat lain](#menjalankan-di-perangkat-lain). Catatan layanan di mesin ini ada di [`docs/operations.md`](docs/operations.md) dan [`docs/MIGRASI.md`](docs/MIGRASI.md).
 
 ## Status aplikasi
 
@@ -15,47 +15,90 @@ Dokumen ini mencatat status implementasi aktual per **17 September 2026**. Petun
 - Phase 1 dokumentasi, Phase 2 autentikasi/otorisasi, Phase 3A–3B SSO, Phase 4A–4B Document Storage, serta security hardening Phase 5 telah diimplementasikan.
 - Build, TypeScript, dan ESLint terakhir dinyatakan lulus.
 
-## Menjalankan aplikasi
+## Menjalankan di perangkat lain
 
-### 1. Pasang dependency
+`git clone` mengambil kode aplikasi. Rahasia, sertifikat, basis data yang sedang berjalan, akun Keycloak, dan Nextcloud tidak ada di repositori ini. Clone saja belum menyalakan ATLAS.
+
+Perangkat baru membutuhkan Docker beserta Docker Compose, OpenSSL, serta Node.js 22 dan npm. Image aplikasi memakai Node.js 22. Perintah Prisma dijalankan di mesin tuan rumah, jadi Node.js juga dipasang di sana.
+
+### 1. Ambil kode
 
 ```bash
-cd /home/localhost/atlas
-npm install
+git clone https://github.com/noval1802/Atlas-V.0.0.1.git atlas
+cd atlas
 ```
 
-### 2. Jalankan deployment produksi
+### 2. Buat rahasia lokal
+
+Salin `.env.example` menjadi dua berkas: `.env` dan `.env.local`. Compose menolak mulai bila salah satu tidak ada. Jangan memasukkan kedua berkas itu ke Git.
+
+Isi `.env`:
+
+- `ATLAS_POSTGRES_PASSWORD`: kata sandi basis data yang baru.
+- `DATABASE_URL`: `postgresql://atlas:<kata-sandi-yang-sama>@localhost:5432/atlas?schema=public`. Prisma di mesin tuan rumah memakai alamat ini. Di dalam container, Compose menggantinya dengan host `postgres`.
+- `AUTH_SECRET`: paling sedikit 32 karakter acak.
+- `NEXT_PUBLIC_APP_URL`: `https://<IP-LAN>`.
+
+Isi `.env.local`:
+
+- `NEXTAUTH_URL`: nilai yang sama dengan `NEXT_PUBLIC_APP_URL`.
+- `AUTH_SECRET`: nilai yang sama dengan berkas `.env`.
+- `OIDC_PROVIDER_NAME`: nama yang tampil di tombol masuk.
+- `OIDC_ISSUER`: `http://<IP-LAN>:8080/realms/atlas`.
+- `OIDC_CLIENT_ID`: `atlas`.
+- `OIDC_CLIENT_SECRET`: rahasia klien dari Keycloak. Jangan menulis nilainya di README.
+- `ENABLE_DEV_LOGIN`: `false` untuk image Docker. Login pengembangan mati karena image memakai `NODE_ENV=production`.
+- `DOCUMENT_MAX_UPLOAD_BYTES`: `26214400`.
+
+### 3. Buat sertifikat
 
 ```bash
 ./scripts/generate-local-tls.sh
+```
+
+Skrip menulis `deploy/tls/atlas.crt` dan `deploy/tls/atlas.key` untuk IP LAN yang terdeteksi. Sertifikat itu ditandatangani sendiri. Perangkat yang membuka situs perlu mempercayainya. Kedua berkas tidak masuk Git. Untuk memaksa IP tertentu, jalankan `ATLAS_LAN_IP=<ip-baru> ./scripts/generate-local-tls.sh`.
+
+### 4. Nyalakan layanan
+
+```bash
 docker compose up -d --build
+```
+
+Compose membuat empat layanan: `atlas-postgres` di `127.0.0.1:5432`, `atlas-app` di `127.0.0.1:3000`, `atlas-realtime`, dan `atlas-proxy` di port 80 serta 443. Port 80 mengalihkan ke HTTPS. Port 5432 di mesin tujuan harus kosong.
+
+### 5. Siapkan basis data kosong
+
+```bash
+npm install
 npm run db:generate
 npx prisma migrate deploy
 npm run db:seed
 ```
 
-Container database bernama `atlas-postgres` dan menggunakan port `5432`.
+`npm run db:seed` mengisi data awal yang boleh dijalankan ulang. Data itu bukan salinan kejadian, laporan, atau unggahan dari mesin asal.
 
-### 3. Akses web
-
-````bash
-Buka `https://<IP-LAN>/login`. HTTP port 80 mengalihkan ke HTTPS. Sertifikat lokal bersifat self-signed dan perlu dipercaya pada perangkat pengguna.
-
-Jika alamat DHCP berubah, jalankan:
+### 6. Periksa
 
 ```bash
-./scripts/sync-lan-address.sh
-````
-
-### Login development
-
-```text
-ENABLE_DEV_LOGIN=true
-DEV_LOGIN_USERNAME=<username-lokal>
-DEV_LOGIN_PASSWORD=<password-lokal>
+curl -fsS http://127.0.0.1:3000/api/health
+curl -kfsS https://127.0.0.1/login
 ```
 
-Login development hanya aktif di non-production dan harus dinyalakan melalui ENV. Untuk SSO, isi konfigurasi OIDC pada `.env` berdasarkan `.env.example`. Dokumen desain berada di `docs/integration/`.
+Buka `https://<IP-LAN>/login`.
+
+### Masuk
+
+Akun pengguna ada di Keycloak, bukan di repositori ini. Di mesin asal, Keycloak berada di `/home/localhost/identity` bersama `.env`, realm, dan basis datanya. Tanpa layanan itu, halaman login tampil tetapi tidak ada akun yang bisa dipakai.
+
+Di perangkat baru, salin folder identity itu atau buat realm `atlas` yang baru. Setelah Keycloak hidup, arahkan redirect klien `atlas` ke `https://<IP-baru>/api/auth/callback/oidc` dan `webOrigins` ke `https://<IP-baru>`.
+
+`scripts/sync-lan-address.sh` mengubah URL ATLAS, Keycloak, dan Nextcloud sekaligus. Jalankan hanya bila ketiga layanan sudah ada di mesin yang sama. Skrip itu mencari Keycloak di folder `identity` di sebelah clone, dan Nextcloud di `/home/localhost/nexops`.
+
+### Membawa data yang sudah ada
+
+Untuk menyalin isi mesin asal, pulihkan dump basis data `atlas` dari container `atlas-postgres` setelah Postgres baru sehat, lalu salin volume unggahan Compose. Di mesin asal volume itu bernama `atlas_atlas_kodam_uploads`. Lewati `npm run db:seed` bila dump sudah berisi data operasional.
+
+Nextcloud tidak diperlukan agar pusat komando berjalan. Dokumen kejadian disimpan di disk aplikasi. Salin `/home/localhost/nexops` hanya bila arsip Nextcloud lama juga pindah.
 
 ## Stack
 
@@ -413,6 +456,10 @@ npm run db:seed
 - Tambahkan test end-to-end browser untuk upload logo dan interaksi drag annotation.
 
 ## Catatan perubahan
+
+### 20 Oktober 2026
+
+- Menulis tata cara menjalankan salinan baru dari `git clone` di bagian Menjalankan di perangkat lain. Rahasia, sertifikat, basis data hidup, dan Keycloak tetap di luar Git. Tidak ada migrasi skema.
 
 ### 17 September 2026
 

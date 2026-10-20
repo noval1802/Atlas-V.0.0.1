@@ -2512,3 +2512,32 @@ tidak ada baris error
 RINGKAS tidak ada baris error baru sejak 2026-10-20T08:05:05Z
 ```
 
+### 2026-10-20 15:26 — tata cara clone ditulis di README
+
+- Perubahan: `README.md` pusat komando mendapat bagian `Menjalankan di perangkat lain`. Isinya langkah clone `https://github.com/noval1802/Atlas-V.0.0.1.git`, pembuatan `.env` dan `.env.local` dari `.env.example`, sertifikat lokal, `docker compose up -d --build`, migrasi Prisma, seed data awal, serta syarat Keycloak. Nilai rahasia tidak ditulis. `readme-atlas-adalah.md` tidak diubah dan tidak dikirim. Skema basis data tidak berubah. Server peta port 3005 tidak dihentikan. Port 3000 tidak dinyalakan.
+- Fitur: tidak ada
+- Perbaikan: pagar kode yang rusak pada bagian menjalankan aplikasi diganti oleh tata cara ini.
+- Error layanan:
+
+```text
+## atlas-app
+tidak ada baris error
+
+## atlas-realtime
+tidak ada baris error
+
+## atlas-postgres
+tidak ada baris error
+
+## atlas-proxy
+tidak ada baris error
+
+## atlas-keycloak
+tidak ada baris error
+
+## atlas-keycloak-db
+tidak ada baris error
+
+RINGKAS tidak ada baris error baru sejak 2026-10-20T08:18:28Z
+```
+
