@@ -68,8 +68,8 @@ export function AnnotationLayer({ items }: { items: MapAnnotation[] }) {
           link.href = dataUrl;
           link.click();
         } else {
-          const { downloadMapPptx } = await import("@/lib/pptx-map-export");
-          downloadMapPptx(dataUrl, `atlas-peta-situasi-${stamp}.pptx`);
+          const { downloadPptx } = await import("@/lib/pptx-export");
+          downloadPptx(dataUrl, `atlas-peta-situasi-${stamp}.pptx`);
         }
       } catch (cause) {
         setExportError(cause instanceof Error ? cause.message : `Ekspor ${format} gagal`);

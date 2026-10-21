@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ClipboardEvent, type FormEvent } from "react";
+import { useRef, useState, type ClipboardEvent, type FormEvent } from "react";
 import { Download, Eye, FileImage, FileText, Loader2, Presentation, Save } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { PageHeader } from "@/components/layout/page-header";
+import { BangsitDocument } from "@/components/bangsit/bangsit-document";
 import { kodams } from "@/data/kodam";
 import { upsertBangsitAnnotation } from "@/lib/map-annotation-storage";
 import type { AnnotationCategory, AnnotationStatus } from "@/types/map-annotation";
@@ -31,6 +32,8 @@ export default function Bangsit() {
   const [archive, setArchive] = useState<Archive | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState<"PNG" | "PPTX" | null>(null);
+  const documentRef = useRef<HTMLDivElement | null>(null);
   function field(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
     setArchive(null);
@@ -97,6 +100,43 @@ export default function Bangsit() {
       setBusy(false);
     }
   }
+  async function exportDocument(format: "PNG" | "PPTX") {
+    const target = documentRef.current;
+    if (!target) return;
+    setExporting(format);
+    setError("");
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(target, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#060b16",
+        skipFonts: true,
+        width: 794,
+        height: 1123,
+      });
+      const stamp = `${form.date}-${form.time}`.replace(/[:.]/g, "-");
+      const name = `atlas-bangsit-${form.kodam.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}-${stamp}`;
+      if (format === "PNG") {
+        const link = document.createElement("a");
+        link.download = `${name}.png`;
+        link.href = dataUrl;
+        link.click();
+      } else {
+        const { downloadPptx } = await import("@/lib/pptx-export");
+        downloadPptx(dataUrl, `${name}.pptx`, `ATLAS - BANGSIT ${form.eventType} ${form.location}`);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : `Ekspor ${format} gagal`);
+    } finally {
+      setExporting(null);
+    }
+  }
+  const reportId =
+    archive?.reportId ??
+    `BANGSIT-${form.date.replaceAll("-", "")}-${form.time.replace(":", "")}-${form.kodam}`
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .toUpperCase();
   return (
     <AppShell>
       <div className="mx-auto max-w-[1600px] space-y-5">
@@ -210,9 +250,13 @@ export default function Bangsit() {
                 <h2 className="mt-1 text-base font-semibold">BANGSIT</h2>
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setPreview(true)} className="action-button">
+                <button
+                  type="button"
+                  onClick={() => setPreview((current) => !current)}
+                  className="action-button"
+                >
                   <Eye size={12} />
-                  Preview
+                  {preview ? "Tutup" : "Preview"}
                 </button>
                 {archive ? (
                   <a href={`/api/bangsit/${archive.id}/download`} className="action-button">
@@ -226,21 +270,61 @@ export default function Bangsit() {
                   </button>
                 )}
                 <button
-                  disabled
-                  title="Format PNG masuk pengembangan berikutnya"
-                  className="action-button opacity-40"
+                  type="button"
+                  onClick={() => exportDocument("PNG")}
+                  disabled={exporting !== null}
+                  title="Unduh dokumen BANGSIT sebagai PNG"
+                  className="action-button disabled:opacity-40"
                 >
-                  <FileImage size={12} />
+                  {exporting === "PNG" ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <FileImage size={12} />
+                  )}
                   PNG
                 </button>
                 <button
-                  disabled
-                  title="Format PPTX masuk pengembangan berikutnya"
-                  className="action-button opacity-40"
+                  type="button"
+                  onClick={() => exportDocument("PPTX")}
+                  disabled={exporting !== null}
+                  title="Unduh dokumen BANGSIT sebagai PowerPoint"
+                  className="action-button disabled:opacity-40"
                 >
-                  <Presentation size={12} />
+                  {exporting === "PPTX" ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Presentation size={12} />
+                  )}
                   PPTX
                 </button>
+              </div>
+            </div>
+            <div
+              className={
+                preview
+                  ? "mt-5 flex justify-center overflow-x-auto pb-2"
+                  : "pointer-events-none fixed -left-[9999px] top-0"
+              }
+              aria-hidden={preview ? undefined : true}
+            >
+              <div ref={documentRef} className="w-[794px] shrink-0">
+                <BangsitDocument
+                  data={{
+                    reportId,
+                    eventType: form.eventType,
+                    location: form.location,
+                    kodam: form.kodam,
+                    date: form.date,
+                    time: form.time,
+                    status: form.status,
+                    latitude: form.latitude,
+                    longitude: form.longitude,
+                    crowd: form.crowd,
+                    personnel: form.personnel,
+                    alut: form.alut,
+                    chronology: form.chronology,
+                  }}
+                />
               </div>
             </div>
             {preview ? (

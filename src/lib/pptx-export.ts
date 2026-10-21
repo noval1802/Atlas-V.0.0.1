@@ -13,7 +13,7 @@ function pngBytes(dataUrl: string) {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
-export function buildMapPptx(dataUrl: string) {
+export function buildPptx(dataUrl: string, title = "ATLAS - Peta Situasi Nasional") {
   const createdAt = new Date().toISOString();
   const files: Record<string, Uint8Array> = {
     "[Content_Types].xml": xml(`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -34,7 +34,7 @@ export function buildMapPptx(dataUrl: string) {
     </Relationships>`),
     "docProps/core.xml":
       xml(`<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <dc:title>ATLAS - Peta Situasi Nasional</dc:title><dc:creator>ATLAS Pusdalops TNI</dc:creator>
+      <dc:title>${title}</dc:title><dc:creator>ATLAS Pusdalops TNI</dc:creator>
       <dcterms:created xsi:type="dcterms:W3CDTF">${createdAt}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${createdAt}</dcterms:modified>
     </cp:coreProperties>`),
     "docProps/app.xml": xml(
@@ -82,8 +82,8 @@ export function buildMapPptx(dataUrl: string) {
   return zipSync(files, { level: 6 });
 }
 
-export function downloadMapPptx(dataUrl: string, filename: string) {
-  const archive = buildMapPptx(dataUrl);
+export function downloadPptx(dataUrl: string, filename: string, title?: string) {
+  const archive = buildPptx(dataUrl, title);
   const link = document.createElement("a");
   link.href = URL.createObjectURL(
     new Blob([archive], {
