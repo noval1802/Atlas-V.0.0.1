@@ -1,21 +1,77 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { authorize, scopedKodamCodes } from "@/auth/authorize";
+import { canonicalKodamScope } from "@/auth/group-mapping";
 import { getAuthPrincipal } from "@/auth/session";
 import { apiError, authorizationError } from "@/http/api-response";
 import { prisma } from "@/lib/prisma";
-import { reportSchema } from "@/operations/schema";
+import { reportFilterSchema, reportSchema } from "@/operations/schema";
 import { auditJson, writeAuditLog } from "@/security/audit";
 import { protectMutation, readJsonBody } from "@/security/request-security";
 
-export async function GET() {
+function reportWhere(
+  scope: string[] | null,
+  filter: {
+    from?: string;
+    to?: string;
+    kodamCode?: string;
+    type?: string;
+    status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+    q?: string;
+  },
+): Prisma.ReportWhereInput {
+  const kodam = (() => {
+    if (scope && filter.kodamCode) {
+      const wanted = canonicalKodamScope(filter.kodamCode);
+      return { code: { in: scope.filter((code) => canonicalKodamScope(code) === wanted) } };
+    }
+    if (scope) return { code: { in: scope } };
+    if (filter.kodamCode) return { code: filter.kodamCode };
+    return null;
+  })();
+  const reportDate = (() => {
+    if (!filter.from && !filter.to) return null;
+    return {
+      ...(filter.from ? { gte: new Date(`${filter.from}T00:00:00.000Z`) } : {}),
+      ...(filter.to ? { lte: new Date(`${filter.to}T23:59:59.999Z`) } : {}),
+    };
+  })();
+  return {
+    ...(kodam ? { kodam } : {}),
+    ...(filter.type ? { type: filter.type } : {}),
+    ...(filter.status ? { status: filter.status } : {}),
+    ...(reportDate ? { reportDate } : {}),
+    ...(filter.q
+      ? {
+          OR: [
+            { title: { contains: filter.q, mode: "insensitive" } },
+            { type: { contains: filter.q, mode: "insensitive" } },
+            { content: { path: ["summary"], string_contains: filter.q } },
+          ],
+        }
+      : {}),
+  };
+}
+
+export async function GET(request: Request) {
   const principal = await getAuthPrincipal();
   const access = authorize(principal, "report:read");
   if (!access.ok) return authorizationError(access);
   if (!principal) return apiError("Autentikasi diperlukan", 401);
+  const raw = Object.fromEntries(
+    [...new URL(request.url).searchParams].filter(([, value]) => value.trim() !== ""),
+  );
+  const parsed = reportFilterSchema.safeParse(raw);
+  if (!parsed.success) return apiError("Filter laporan tidak valid", 400, parsed.error.flatten());
+  const filter = parsed.data;
+  if (filter.kodamCode) {
+    const scoped = authorize(principal, "report:read", filter.kodamCode);
+    if (!scoped.ok) return authorizationError(scoped);
+  }
   const scope = scopedKodamCodes(principal);
   return NextResponse.json(
     await prisma.report.findMany({
-      where: scope ? { kodam: { code: { in: scope } } } : undefined,
+      where: reportWhere(scope, filter),
       include: { kodam: true },
       orderBy: { reportDate: "desc" },
       take: 500,

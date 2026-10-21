@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  reportFilterSchema,
   reportSchema,
   reportWorkflowSchema,
   resourceSchema,
@@ -45,4 +46,22 @@ test("manajemen user membatasi role dan status", () => {
     userManagementSchema.safeParse({ role: "ROOT", kodamCode: null, status: "ACTIVE" }).success,
     false,
   );
+});
+
+test("filter laporan menerima rentang tanggal, Kodam, kategori, status, dan pencarian", () => {
+  const result = reportFilterSchema.safeParse({
+    from: "2026-08-01",
+    to: "2026-08-31",
+    kodamCode: "XII/TPR",
+    type: "Laporan Harian",
+    status: "PUBLISHED",
+    q: "banjir",
+  });
+  assert.equal(result.success, true);
+});
+
+test("filter laporan menolak tanggal terbalik dan status yang tidak dikenal", () => {
+  assert.equal(reportFilterSchema.safeParse({ from: "2026-08-31", to: "2026-08-01" }).success, false);
+  assert.equal(reportFilterSchema.safeParse({ status: "DIHAPUS" }).success, false);
+  assert.equal(reportFilterSchema.safeParse({ from: "31-08-2026" }).success, false);
 });

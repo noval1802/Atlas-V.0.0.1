@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { Archive, FilePlus2, Send, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { Archive, FilePlus2, Filter, Send, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { DownloadReportButton } from "./download-report-button";
 
@@ -15,6 +15,15 @@ type ReportRow = {
   status: string;
   kodam: (KodamOption & { id?: string }) | null;
 };
+type Filters = {
+  from: string;
+  to: string;
+  kodamCode: string;
+  type: string;
+  status: string;
+  q: string;
+};
+const emptyFilters: Filters = { from: "", to: "", kodamCode: "", type: "", status: "", q: "" };
 const summaryOf = (content: unknown) =>
   typeof content === "object" && content !== null && "summary" in content
     ? String((content as { summary?: unknown }).summary ?? "")
@@ -36,6 +45,9 @@ export function ReportManager({
   canApprove: boolean;
 }) {
   const [rows, setRows] = useState(initialRows);
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [filtering, setFiltering] = useState(false);
+  const firstFilterRun = useRef(true);
   const [form, setForm] = useState({
     kodamCode: "",
     type: "Laporan Harian",
@@ -45,6 +57,34 @@ export function ReportManager({
   });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const applyFilters = useCallback(async (next: Filters) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(next)) if (value) params.set(key, value);
+    setFiltering(true);
+    try {
+      const response = await fetch(`/api/reports?${params.toString()}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Filter laporan gagal");
+      setRows(data);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Filter laporan gagal");
+    } finally {
+      setFiltering(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (firstFilterRun.current) {
+      firstFilterRun.current = false;
+      return;
+    }
+    const timer = setTimeout(() => void applyFilters(filters), 250);
+    return () => clearTimeout(timer);
+  }, [applyFilters, filters]);
+
+  const reportTypes = [...new Set(initialRows.map((row) => row.type))].sort();
+  const activeFilters = Object.values(filters).some((value) => value !== "");
 
   async function create(event: FormEvent) {
     event.preventDefault();
@@ -58,7 +98,7 @@ export function ReportManager({
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Laporan gagal dibuat");
-      setRows((current) => [data, ...current]);
+      await applyFilters(filters);
       setForm({ ...form, title: "", summary: "" });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Laporan gagal dibuat");
@@ -75,7 +115,7 @@ export function ReportManager({
     });
     const data = await response.json();
     if (!response.ok) return setError(data.error ?? "Workflow laporan gagal");
-    setRows((current) => current.map((row) => (row.id === id ? data : row)));
+    await applyFilters(filters);
   }
 
   async function remove(id: string) {
@@ -142,6 +182,98 @@ export function ReportManager({
           />
         </form>
       )}
+      <div className="panel grid gap-3 rounded-xl p-4 md:grid-cols-2 xl:grid-cols-6">
+        <label className="text-[10px] text-slate-400">
+          Dari tanggal
+          <input
+            type="date"
+            aria-label="Filter tanggal awal"
+            value={filters.from}
+            onChange={(event) => setFilters({ ...filters, from: event.target.value })}
+            className="mt-2 h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs"
+          />
+        </label>
+        <label className="text-[10px] text-slate-400">
+          Sampai tanggal
+          <input
+            type="date"
+            aria-label="Filter tanggal akhir"
+            value={filters.to}
+            onChange={(event) => setFilters({ ...filters, to: event.target.value })}
+            className="mt-2 h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs"
+          />
+        </label>
+        <label className="text-[10px] text-slate-400">
+          Kodam
+          <select
+            aria-label="Filter Kodam"
+            value={filters.kodamCode}
+            onChange={(event) => setFilters({ ...filters, kodamCode: event.target.value })}
+            className="mt-2 h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs"
+          >
+            <option value="">Semua Kodam</option>
+            {kodams.map((kodam) => (
+              <option key={kodam.code} value={kodam.code}>
+                {kodam.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-[10px] text-slate-400">
+          Kategori
+          <select
+            aria-label="Filter kategori"
+            value={filters.type}
+            onChange={(event) => setFilters({ ...filters, type: event.target.value })}
+            className="mt-2 h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs"
+          >
+            <option value="">Semua kategori</option>
+            {reportTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-[10px] text-slate-400">
+          Status
+          <select
+            aria-label="Filter status"
+            value={filters.status}
+            onChange={(event) => setFilters({ ...filters, status: event.target.value })}
+            className="mt-2 h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs"
+          >
+            <option value="">Semua status</option>
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published</option>
+            <option value="ARCHIVED">Arsip</option>
+          </select>
+        </label>
+        <label className="text-[10px] text-slate-400">
+          Cari
+          <input
+            aria-label="Filter pencarian"
+            value={filters.q}
+            onChange={(event) => setFilters({ ...filters, q: event.target.value })}
+            placeholder="Judul, kategori, atau ringkasan"
+            className="mt-2 h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs"
+          />
+        </label>
+        <div className="flex items-center justify-between gap-3 md:col-span-2 xl:col-span-6">
+          <p className="text-[10px] text-slate-500">
+            {filtering ? "Memuat laporan..." : `${rows.length} laporan ditampilkan`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setFilters(emptyFilters)}
+            disabled={!activeFilters}
+            className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-[10px] text-slate-400 disabled:opacity-40"
+          >
+            <Filter size={12} />
+            Reset filter
+          </button>
+        </div>
+      </div>
       {error && (
         <p role="alert" className="text-xs text-rose-400">
           {error}
@@ -222,7 +354,11 @@ export function ReportManager({
             })}
           </tbody>
         </table>
-        {rows.length === 0 && <p className="p-8 text-center text-xs text-slate-500">Belum ada laporan.</p>}
+        {rows.length === 0 && (
+          <p className="p-8 text-center text-xs text-slate-500">
+            {activeFilters ? "Tidak ada laporan yang cocok dengan filter." : "Belum ada laporan."}
+          </p>
+        )}
       </div>
     </div>
   );
