@@ -115,25 +115,25 @@ Dokumen kejadian dan PDF BANGSIT disimpan di disk aplikasi.
 
 ## Route aplikasi
 
-| Route            | Modul                                     | Status                                           |
-| ---------------- | ----------------------------------------- | ------------------------------------------------ |
-| `/login`         | Login MVP                                 | Berfungsi                                        |
-| `/dashboard`     | Dashboard nasional                        | Berfungsi                                        |
-| `/map`           | Peta situasi dan editor titik             | Berfungsi                                        |
-| `/kodam`         | Daftar dan editor Data Kodam              | Berfungsi                                        |
-| `/kodam/[id]`    | Detail Kodam                              | Berfungsi                                        |
-| `/kejadian`      | Incident Manager                          | PostgreSQL CRUD, RBAC, audit                     |
-| `/kejadian/[id]` | Detail kejadian dan dokumen terkait       | PostgreSQL, RBAC, berkas di disk aplikasi        |
-| `/bangsit`       | Form, pratinjau, generate, dan arsip BANGSIT | PDF di disk aplikasi                             |
-| `/bencana`       | Monitoring bencana                        | PostgreSQL CRUD, RBAC, audit                     |
-| `/karhutla`      | Monitoring karhutla                       | PostgreSQL CRUD, RBAC, audit                     |
-| `/unras`         | Monitoring unjuk rasa                     | PostgreSQL CRUD, RBAC, audit                     |
-| `/security`      | Gangguan keamanan                         | PostgreSQL CRUD, RBAC, audit                     |
-| `/resources`     | Personel dan alut                         | PostgreSQL CRUD, RBAC, audit                     |
-| `/alerts`        | Early warning                             | PostgreSQL API CRUD, RBAC, audit                 |
-| `/reports`       | CRUD dan workflow laporan                 | PostgreSQL + PDF berfungsi                       |
-| `/my-access`     | Identitas dan izin user aktif             | Berfungsi                                        |
-| `/admin`         | User, role, status, scope, dan audit log  | PostgreSQL + audit berfungsi                     |
+| Route            | Modul                                        | Status                                    |
+| ---------------- | -------------------------------------------- | ----------------------------------------- |
+| `/login`         | Login MVP                                    | Berfungsi                                 |
+| `/dashboard`     | Dashboard nasional                           | Berfungsi                                 |
+| `/map`           | Peta situasi dan editor titik                | Berfungsi                                 |
+| `/kodam`         | Daftar dan editor Data Kodam                 | Berfungsi                                 |
+| `/kodam/[id]`    | Detail Kodam                                 | Berfungsi                                 |
+| `/kejadian`      | Incident Manager                             | PostgreSQL CRUD, RBAC, audit              |
+| `/kejadian/[id]` | Detail kejadian dan dokumen terkait          | PostgreSQL, RBAC, berkas di disk aplikasi |
+| `/bangsit`       | Form, pratinjau, generate, dan arsip BANGSIT | PDF di disk aplikasi                      |
+| `/bencana`       | Monitoring bencana                           | PostgreSQL CRUD, RBAC, audit              |
+| `/karhutla`      | Monitoring karhutla                          | PostgreSQL CRUD, RBAC, audit              |
+| `/unras`         | Monitoring unjuk rasa                        | PostgreSQL CRUD, RBAC, audit              |
+| `/security`      | Gangguan keamanan                            | PostgreSQL CRUD, RBAC, audit              |
+| `/resources`     | Personel dan alut                            | PostgreSQL CRUD, RBAC, audit              |
+| `/alerts`        | Early warning                                | PostgreSQL API CRUD, RBAC, audit          |
+| `/reports`       | CRUD dan workflow laporan                    | PostgreSQL + PDF berfungsi                |
+| `/my-access`     | Identitas dan izin user aktif                | Berfungsi                                 |
+| `/admin`         | User, role, status, scope, dan audit log     | PostgreSQL + audit berfungsi              |
 
 ## Fitur yang sudah selesai
 
@@ -295,7 +295,7 @@ Layout annotation disimpan ke PostgreSQL melalui `/api/map-annotations/layout`. 
 
 ### Laporan
 
-- Daftar laporan dengan filter UI.
+- Daftar laporan dengan filter UI: rentang tanggal, Kodam, kategori, status, dan pencarian judul, kategori, atau ringkasan. Filter dijalankan di server melalui `GET /api/reports` dan tetap mengikuti scope Kodam.
 - Download PDF nyata menggunakan jsPDF.
 - Laporan uji dengan dokumentasi gambar tersedia di `/downloads/ATLAS-laporan-uji.pdf`.
 - PDF telah diverifikasi sebagai PDF 1 halaman dan dapat diakses melalui HTTP.
@@ -306,7 +306,7 @@ Layout annotation disimpan ke PostgreSQL melalui `/api/map-annotations/layout`. 
 - PDF disimpan di disk aplikasi, dalam folder per Kodam, tahun, dan bulan. Referensinya dicatat pada tabel `BangsitArchive`.
 - List, generate, dan download ditegakkan dengan permission serta scope Kodam di backend.
 - Generate dan download dicatat ke `AuditLog` dengan correlation ID.
-- Tombol PNG dan PPTX dinonaktifkan sampai generator format tersebut tersedia.
+- Dokumen BANGSIT ditampilkan sebagai halaman A4 dan dapat diunduh sebagai PNG maupun PPTX. Satu elemen dokumen menjadi sumber tunggal untuk pratinjau dan kedua ekspor, jadi berkas yang diunduh sama dengan yang dilihat operator.
 - Input koordinat mendukung paste pasangan koordinat pada kolom Latitude maupun Longitude dan memvalidasi batas geografis sebelum laporan disimpan.
 
 ### Monitoring Unras
@@ -364,6 +364,10 @@ Migrasi Prisma formal tersedia di `prisma/migrations`; gunakan `npx prisma migra
 | `GET/POST`   | `/api/kodams`                   | Daftar atau tambah Kotamaops sesuai izin      |
 | `PUT/DELETE` | `/api/kodams/[id]`              | Edit atau hapus Kotamaops sesuai izin         |
 | `GET/POST`   | `/api/kodams/[id]/logo`         | Membaca atau mengunggah logo WebP tervalidasi |
+| `GET`        | `/api/reports`                  | Daftar laporan, boleh disaring                |
+| `GET/POST`   | `/api/bangsit`                  | Arsip BANGSIT dan unduh PDF                   |
+
+`GET /api/reports` menerima parameter `from`, `to` (tanggal ISO), `kodamCode`, `type`, `status` (`DRAFT`, `PUBLISHED`, `ARCHIVED`), dan `q` (pencarian judul, kategori, atau ringkasan). Parameter di luar cakupan Kodam menghasilkan `403`; tanggal terbalik atau status tak dikenal menghasilkan `400`.
 
 ## Struktur penting
 
@@ -417,6 +421,10 @@ atlas/
 - `src/components/incidents/incident-manager.tsx`: UI CRUD kejadian.
 - `src/hooks/use-incidents-api.ts`: CRUD Kejadian melalui API PostgreSQL.
 - `src/components/reports/download-report-button.tsx`: generator PDF.
+- `src/components/reports/report-manager.tsx`: tabel laporan dan baris filter server.
+- `src/components/bangsit/bangsit-document.tsx`: dokumen A4 BANGSIT, sumber tunggal pratinjau dan ekspor.
+- `src/lib/pptx-export.ts`: pembungkus PNG menjadi berkas PPTX satu slide.
+- `e2e/bangsit-export-and-report-filter.spec.ts`: uji browser ekspor BANGSIT dan filter laporan.
 - `prisma/schema.prisma`: model database.
 - `src/app/api/incidents/`: REST API kejadian.
 
@@ -431,6 +439,16 @@ npm run build
 npm audit --omit=dev --audit-level=high
 ```
 
+Uji browser memakai Playwright dan butuh instance yang sudah berjalan:
+
+```bash
+E2E_BASE_URL=http://localhost:3000 \
+DEV_LOGIN_USERNAME=admin.pusdalops DEV_LOGIN_PASSWORD=<password> \
+npx playwright test e2e/bangsit-export-and-report-filter.spec.ts
+```
+
+Tes yang memakai login development dilewati saat `DEV_LOGIN_USERNAME` atau `DEV_LOGIN_PASSWORD` tidak diisi. `e2e/sso-and-operations.spec.ts` memakai SSO Keycloak dan `CREDENTIALS.local.txt`, jadi hanya jalan di mesin yang punya Keycloak.
+
 Verifikasi database:
 
 ```bash
@@ -444,7 +462,7 @@ npm run db:seed
 - Pindahkan cache annotation terakhir ke state server/realtime push; `localStorage` hanya dipakai untuk respons drag instan.
 - Provision Keycloak/IdP organisasi dan isi konfigurasi OIDC production ATLAS.
 - Terapkan helper RBAC yang sama pada Route Handler selain modul kejadian saat modul tersebut dipindahkan dari `localStorage` ke API.
-- Tambahkan generator dan arsip BANGSIT format PNG serta PPTX; PDF sudah aktif.
+- Tambahkan arsip BANGSIT format PNG serta PPTX di server; unduhan PNG dan PPTX sekarang berjalan di browser.
 - Perluas dokumen terkait ke modul selain kejadian dan tambahkan penghapusan/versi dokumen dengan audit log.
 - Tambahkan PostGIS untuk query geospasial.
 - Terapkan HTTPS, CSP berbasis nonce/hash, trusted proxy, serta Redis rate limiter untuk deployment multi-instance.

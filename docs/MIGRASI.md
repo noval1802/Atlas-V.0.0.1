@@ -4,16 +4,16 @@ Disusun: **30 September 2026**
 
 Dokumen ini menggabungkan empat brief asli dan mencocokkannya dengan kode serta layanan yang benar-benar berjalan pada tanggal di atas. Empat brief itu tetap disimpan sebagai arsip permintaan, bukan sebagai status terkini:
 
-| Brief asli | Isi |
-|---|---|
-| `ATLAS.txt` | Spesifikasi MVP command center: menu, dashboard, peta, BANGSIT, role, dan skema data. |
-| `Atlas & NextCloud.txt` | Rencana satu identitas untuk ATLAS dan Nextcloud, RBAC, scope Kodam, dan arsip dokumen. |
-| `Tambahkan fitur Dynamic.txt` | Peta situasi: marker, garis penghubung, kartu keterangan, drag, filter, dan ekspor. |
-| `README-AUDIT-ATLAS.md` | Audit 29 Agustus 2026 yang membandingkan brief dengan kode pada saat itu. |
+| Brief asli                    | Isi                                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| `ATLAS.txt`                   | Spesifikasi MVP command center: menu, dashboard, peta, BANGSIT, role, dan skema data.   |
+| `Atlas & NextCloud.txt`       | Rencana satu identitas untuk ATLAS dan Nextcloud, RBAC, scope Kodam, dan arsip dokumen. |
+| `Tambahkan fitur Dynamic.txt` | Peta situasi: marker, garis penghubung, kartu keterangan, drag, filter, dan ekspor.     |
+| `README-AUDIT-ATLAS.md`       | Audit 29 Agustus 2026 yang membandingkan brief dengan kode pada saat itu.               |
 
 Audit 29 Agustus menyatakan integrasi Nextcloud selesai dan proxy sehat di IP LAN lama. Itu tidak lagi berlaku. Perubahan setelah audit dicatat di bagian [Riwayat yang wajib dibawa saat migrasi](#riwayat-yang-wajib-dibawa-saat-migrasi).
 
-Nama sistem: **ATLAS — Advanced Tactical Location & Analytics System**. Tagline yang diminta di brief: *Integrated Situational Awareness & Operational Analytics Platform*.
+Nama sistem: **ATLAS — Advanced Tactical Location & Analytics System**. Tagline yang diminta di brief: _Integrated Situational Awareness & Operational Analytics Platform_.
 
 ## Keputusan yang sedang berlaku
 
@@ -30,19 +30,19 @@ Kolom database `nextcloudFileId` masih ada. Nama itu warisan. Isinya sekarang ha
 
 Ada dua pohon folder. Jangan menganggap keduanya sama.
 
-| Path | Peran pada 1 Oktober 2026 |
-|---|---|
-| `/home/localhost/Project/atlas` | **Sumber kode ATLAS yang dipakai container.** Compose, Dockerfile, env, sertifikat, dan skrip ada di sini. |
-| `/home/localhost/identity` | **Keycloak yang sedang berjalan.** Bukan di dalam `Project/`. Realm, `.env`, dan data PostgreSQL Keycloak ada di sini. |
-| `/home/localhost/nexops` | **Nextcloud yang sedang berjalan.** Compose, skrip, `.env`, `data/`, dan `db/` ada di sini. Dipindah dari `Project/nexops` pada 1 Oktober 2026. |
-| `/home/localhost/nexops-instalasi-kosong-20261001` | Instalasi kosong yang sempat dibuat hari ini saat container menyala pada folder data baru. Hanya akun `admin` dan berkas bawaan. Tidak dilayani. |
-| `/home/localhost/atlas` | Sisa deploy lama. `deploy/nginx.conf` di sini berupa **folder kosong**, bukan file. Proxy yang dulu diikat ke path ini gagal start. Jangan dipakai lagi. |
+| Path                                               | Peran pada 1 Oktober 2026                                                                                                                                |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/home/localhost/Project/atlas`                    | **Sumber kode ATLAS yang dipakai container.** Compose, Dockerfile, env, sertifikat, dan skrip ada di sini.                                               |
+| `/home/localhost/identity`                         | **Keycloak yang sedang berjalan.** Bukan di dalam `Project/`. Realm, `.env`, dan data PostgreSQL Keycloak ada di sini.                                   |
+| `/home/localhost/nexops`                           | **Nextcloud yang sedang berjalan.** Compose, skrip, `.env`, `data/`, dan `db/` ada di sini. Dipindah dari `Project/nexops` pada 1 Oktober 2026.          |
+| `/home/localhost/nexops-instalasi-kosong-20261001` | Instalasi kosong yang sempat dibuat hari ini saat container menyala pada folder data baru. Hanya akun `admin` dan berkas bawaan. Tidak dilayani.         |
+| `/home/localhost/atlas`                            | Sisa deploy lama. `deploy/nginx.conf` di sini berupa **folder kosong**, bukan file. Proxy yang dulu diikat ke path ini gagal start. Jangan dipakai lagi. |
 
 Volume Docker yang menyimpan data ATLAS:
 
-| Volume | Isi |
-|---|---|
-| `atlas_atlas_postgres_data` | Database PostgreSQL aplikasi ATLAS. |
+| Volume                      | Isi                                                 |
+| --------------------------- | --------------------------------------------------- |
+| `atlas_atlas_postgres_data` | Database PostgreSQL aplikasi ATLAS.                 |
 | `atlas_atlas_kodam_uploads` | Logo Kotamaops dan arsip dokumen di `/app/uploads`. |
 
 Data Nextcloud yang hidup ada di bind mount `/home/localhost/nexops/data` dan `/home/localhost/nexops/db`. Compose-nya ada di folder yang sama. Bukan volume bernama.
@@ -51,16 +51,16 @@ Data Nextcloud yang hidup ada di bind mount `/home/localhost/nexops/data` dan `/
 
 Dicek 30 September 2026. Health aplikasi: `{"status":"ok","database":"connected"}`.
 
-| Layanan | Container | Alamat | Catatan |
-|---|---|---|---|
-| ATLAS | `atlas-app` | `127.0.0.1:3000`, pintu publik `https://192.168.2.132` | Hanya jaringan `atlas_default`. |
-| Proxy | `atlas-proxy` | `80` dan `443` | Nginx memakai `Project/atlas/deploy/nginx.conf` dan sertifikat untuk IP `192.168.2.132`. |
-| Realtime | `atlas-realtime` | internal `3001` | WebSocket lewat proxy di path `/ws`. |
-| PostgreSQL ATLAS | `atlas-postgres` | `127.0.0.1:5432` | Postgres 16. |
-| Keycloak | `atlas-keycloak` | `http://192.168.2.132:8080` | Keycloak 26.7.1, perintah `start-dev`. Realm `atlas`. |
-| Database Keycloak | `atlas-keycloak-db` | internal | Postgres 16, data di `/home/localhost/identity/data/postgres`. |
-| Nextcloud | `nexops-app-1` | `http://127.0.0.1:8081` | Nextcloud 31.0.14. Tidak dipakai ATLAS. |
-| MariaDB dan Redis | `nexops-db-1`, `nexops-redis-1` | internal | Hanya untuk Nextcloud. |
+| Layanan           | Container                       | Alamat                                                 | Catatan                                                                                  |
+| ----------------- | ------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| ATLAS             | `atlas-app`                     | `127.0.0.1:3000`, pintu publik `https://192.168.2.132` | Hanya jaringan `atlas_default`.                                                          |
+| Proxy             | `atlas-proxy`                   | `80` dan `443`                                         | Nginx memakai `Project/atlas/deploy/nginx.conf` dan sertifikat untuk IP `192.168.2.132`. |
+| Realtime          | `atlas-realtime`                | internal `3001`                                        | WebSocket lewat proxy di path `/ws`.                                                     |
+| PostgreSQL ATLAS  | `atlas-postgres`                | `127.0.0.1:5432`                                       | Postgres 16.                                                                             |
+| Keycloak          | `atlas-keycloak`                | `http://192.168.2.132:8080`                            | Keycloak 26.7.1, perintah `start-dev`. Realm `atlas`.                                    |
+| Database Keycloak | `atlas-keycloak-db`             | internal                                               | Postgres 16, data di `/home/localhost/identity/data/postgres`.                           |
+| Nextcloud         | `nexops-app-1`                  | `http://127.0.0.1:8081`                                | Nextcloud 31.0.14. Tidak dipakai ATLAS.                                                  |
+| MariaDB dan Redis | `nexops-db-1`, `nexops-redis-1` | internal                                               | Hanya untuk Nextcloud.                                                                   |
 
 Membuka `http://127.0.0.1:3000/login` dialihkan ke `https://192.168.2.132/login`. Sertifikat ditandatangani sendiri. Browser menampilkan peringatan; itu diharapkan untuk sertifikat LAN ini.
 
@@ -68,17 +68,17 @@ Akun uji ada di `Project/atlas/CREDENTIALS.local.txt`. Jangan menyalin password 
 
 ### Isi database saat catatan ini dibuat
 
-| Data | Jumlah |
-|---|---|
-| Kotamaops | 22, termasuk Kodaeral V di luar 21 Kodam pada brief awal |
-| Kejadian | 12 |
-| Catatan operasional bencana / karhutla / unras | 4 / 6 / 6 |
-| Early warning | 3 |
-| Laporan | 5 |
-| Arsip BANGSIT | 1 metadata |
-| Titik peta (`MapPoint`) | 0 |
-| Referensi dokumen | 0 |
-| Offset layout anotasi | 0 |
+| Data                                           | Jumlah                                                   |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| Kotamaops                                      | 22, termasuk Kodaeral V di luar 21 Kodam pada brief awal |
+| Kejadian                                       | 12                                                       |
+| Catatan operasional bencana / karhutla / unras | 4 / 6 / 6                                                |
+| Early warning                                  | 3                                                        |
+| Laporan                                        | 5                                                        |
+| Arsip BANGSIT                                  | 1 metadata                                               |
+| Titik peta (`MapPoint`)                        | 0                                                        |
+| Referensi dokumen                              | 0                                                        |
+| Offset layout anotasi                          | 0                                                        |
 
 Contoh data bencana yang masih ada: Gempa M 4,2 di Jayapura, banjir Makassar, longsor Bogor, cuaca ekstrem Semarang. Gempa bukan menu sendiri. Gempa masuk di Bencana Alam dan di daftar Kejadian.
 
@@ -88,18 +88,18 @@ PDF dari satu arsip BANGSIT lama (`PUSDALOPS/KODAM_XII_TPR/BANGSIT/2026/08/BANGS
 
 Brief meminta Next.js, React, TypeScript, Tailwind, shadcn/ui, Lucide, Recharts, MapLibre atau Leaflet, API Next.js, PostgreSQL, dan Prisma. Yang terpasang:
 
-| Bagian | Kenyataan |
-|---|---|
-| Aplikasi | Next.js 16.3.2 App Router, React 19.2.8, TypeScript |
-| Gaya | Tailwind. Komponen UI ditulis sendiri, bukan paket shadcn. |
-| Ikon dan grafik | Lucide, Recharts |
-| Peta | Leaflet 1.9.4 dan react-leaflet, bukan MapLibre |
-| Auth | NextAuth 4.24 dengan provider OIDC ke Keycloak |
-| Data | Prisma 6, PostgreSQL 16. Koordinat berupa `Float`. PostGIS tidak dipasang. |
-| Validasi | Zod |
-| PDF dan ekspor peta | jsPDF, html-to-image, PPTX dibuat di `src/lib/pptx-map-export.ts` |
-| Realtime | Server `ws` di `realtime/server.mjs` |
-| Backend terpisah FastAPI | Belum. Seluruh API masih route Next.js. |
+| Bagian                   | Kenyataan                                                                  |
+| ------------------------ | -------------------------------------------------------------------------- |
+| Aplikasi                 | Next.js 16.3.2 App Router, React 19.2.8, TypeScript                        |
+| Gaya                     | Tailwind. Komponen UI ditulis sendiri, bukan paket shadcn.                 |
+| Ikon dan grafik          | Lucide, Recharts                                                           |
+| Peta                     | Leaflet 1.9.4 dan react-leaflet, bukan MapLibre                            |
+| Auth                     | NextAuth 4.24 dengan provider OIDC ke Keycloak                             |
+| Data                     | Prisma 6, PostgreSQL 16. Koordinat berupa `Float`. PostGIS tidak dipasang. |
+| Validasi                 | Zod                                                                        |
+| PDF dan ekspor peta      | jsPDF, html-to-image, PPTX dibuat di `src/lib/pptx-map-export.ts`          |
+| Realtime                 | Server `ws` di `realtime/server.mjs`                                       |
+| Backend terpisah FastAPI | Belum. Seluruh API masih route Next.js.                                    |
 
 Perintah di `Project/atlas`: `npm test`, `npm run lint`, `npm run format:check`, `npm run build`, `npm run db:generate`.
 
@@ -182,26 +182,26 @@ Yang sudah jalan:
 
 Ini selisih antara brief dan kode pada 30 September 2026.
 
-| Permintaan | Keadaan | Alasan ini menghambat lanjutan |
-|---|---|---|
-| Satu login untuk ATLAS dan Nextcloud | Belum dibuktikan sebagai sesi bersama. Setelah pindah 1 Oktober 2026, instance yang di-mount memakai `user_oidc` 8.10.1 dan punya akun `atlas-service`. | Brief menginginkan satu sesi IdP. ATLAS sudah SSO ke Keycloak. Keberadaan aplikasi itu belum berarti operator masuk Nextcloud lewat sesi ATLAS. |
-| File tetap di Nextcloud, ATLAS hanya menyimpan referensi | Sengaja diubah 29 September 2026. Penyimpanan berpindah ke disk ATLAS. | Migrasi tidak boleh mengembalikan WebDAV kecuali keputusan ini dibatalkan. Dokumen di `docs/integration/document-storage.md` dan `nextcloud-integration.md` masih menggambarkan desain lama. |
-| PostGIS | Belum. Koordinat adalah angka biasa. | Query spasial (radius, wilayah, irisan peta) tidak bisa diandalkan di SQL. |
-| Backend FastAPI terpisah | Belum. | Seluruh domain masih di dalam proses Next.js. |
-| shadcn/ui | Belum sebagai pustaka. | Komponen tidak memakai registry shadcn. Menggantinya sekarang hanya biaya visual. |
-| MapLibre | Tidak dipilih. Leaflet yang dipakai. | Jangan menambah MapLibre paralel tanpa alasan. Leader line sudah dihitung untuk Leaflet. |
-| Field “Remember me” | Belum. | Bukan penghambat operasi. |
-| Search, lonceng notifikasi, dan menu profil di header | Belum menjadi alur lengkap. Logout dan jam ada. | Operator tidak punya pusat notifikasi di header. |
-| Filter tanggal, Kodam, dan kategori di Laporan | Belum di UI laporan. | Brief `ATLAS.txt` bagian 18 meminta filter ini. Daftar laporan bisa diunduh, tetapi tidak bisa disaring seperti yang diminta. |
-| Tombol Export PNG dan Export PowerPoint di halaman BANGSIT | Masih `disabled`. | Ekspor PNG dan PPTX sudah ada di Peta Situasi, belum di halaman BANGSIT. PDF BANGSIT yang jalan. |
-| “Open in Nextcloud” pada dokumen kejadian | Tidak ada, dan tidak relevan setelah pemisahan. | Unduhan lewat ATLAS. |
-| Kartu anotasi menampilkan seluruh field khusus | Sebagian masih field generik. | Brief meminta hotspot, luas hektare, organisasi, dan keluarga terdampak sebagai field sendiri. Sebagian nilai masih masuk kolom teks. |
-| Cluster peta kelas pustaka | Cluster buatan sendiri berbasis jarak piksel. | Pada jumlah marker besar, kelompok dan pecahannya belum setara pustaka cluster. |
-| Realtime ujung ke ujung untuk setiap kejadian | Kanal realtime ada. Tidak setiap perubahan incident mendorong isi kartu tanpa tarik data ulang. | Angka di kartu tidak dijamin berubah sendiri saat operator lain menyimpan. |
-| Anotasi di layar sentuh | Belum diuji menyeluruh. | Command center desktop aman. Tablet belum bisa dianggap selesai. |
-| Mode ekspor yang menyembunyikan seluruh chrome lalu memotret layout bersih untuk PDF laporan | Ekspor peta ada. Jalur BANGSIT belum memakai mode itu. | Produk laporan presentasi masih terbelah antara dua halaman. |
-| Struktur folder nasional Nextcloud `PUSDALOPS/NASIONAL/...` | Tidak dipakai ATLAS lagi. Skrip ada di `/home/localhost/nexops/scripts/provision-kodam-folders.sh`. | Jangan menjalankan skrip itu kalau tujuannya hanya meneruskan ATLAS. |
-| `atlas-lan-watch.service` pada audit Agustus | Tidak menjadi bagian layanan yang diverifikasi hidup pada 30 September. | IP diganti manual. Jangan berharap IP mengikuti DHCP sendiri. |
+| Permintaan                                                                                   | Keadaan                                                                                                                                                 | Alasan ini menghambat lanjutan                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Satu login untuk ATLAS dan Nextcloud                                                         | Belum dibuktikan sebagai sesi bersama. Setelah pindah 1 Oktober 2026, instance yang di-mount memakai `user_oidc` 8.10.1 dan punya akun `atlas-service`. | Brief menginginkan satu sesi IdP. ATLAS sudah SSO ke Keycloak. Keberadaan aplikasi itu belum berarti operator masuk Nextcloud lewat sesi ATLAS.                                              |
+| File tetap di Nextcloud, ATLAS hanya menyimpan referensi                                     | Sengaja diubah 29 September 2026. Penyimpanan berpindah ke disk ATLAS.                                                                                  | Migrasi tidak boleh mengembalikan WebDAV kecuali keputusan ini dibatalkan. Dokumen di `docs/integration/document-storage.md` dan `nextcloud-integration.md` masih menggambarkan desain lama. |
+| PostGIS                                                                                      | Belum. Koordinat adalah angka biasa.                                                                                                                    | Query spasial (radius, wilayah, irisan peta) tidak bisa diandalkan di SQL.                                                                                                                   |
+| Backend FastAPI terpisah                                                                     | Belum.                                                                                                                                                  | Seluruh domain masih di dalam proses Next.js.                                                                                                                                                |
+| shadcn/ui                                                                                    | Belum sebagai pustaka.                                                                                                                                  | Komponen tidak memakai registry shadcn. Menggantinya sekarang hanya biaya visual.                                                                                                            |
+| MapLibre                                                                                     | Tidak dipilih. Leaflet yang dipakai.                                                                                                                    | Jangan menambah MapLibre paralel tanpa alasan. Leader line sudah dihitung untuk Leaflet.                                                                                                     |
+| Field “Remember me”                                                                          | Belum.                                                                                                                                                  | Bukan penghambat operasi.                                                                                                                                                                    |
+| Search, lonceng notifikasi, dan menu profil di header                                        | Belum menjadi alur lengkap. Logout dan jam ada.                                                                                                         | Operator tidak punya pusat notifikasi di header.                                                                                                                                             |
+| Filter tanggal, Kodam, dan kategori di Laporan                                               | Belum di UI laporan.                                                                                                                                    | Brief `ATLAS.txt` bagian 18 meminta filter ini. Daftar laporan bisa diunduh, tetapi tidak bisa disaring seperti yang diminta.                                                                |
+| Tombol Export PNG dan Export PowerPoint di halaman BANGSIT                                   | Masih `disabled`.                                                                                                                                       | Ekspor PNG dan PPTX sudah ada di Peta Situasi, belum di halaman BANGSIT. PDF BANGSIT yang jalan.                                                                                             |
+| “Open in Nextcloud” pada dokumen kejadian                                                    | Tidak ada, dan tidak relevan setelah pemisahan.                                                                                                         | Unduhan lewat ATLAS.                                                                                                                                                                         |
+| Kartu anotasi menampilkan seluruh field khusus                                               | Sebagian masih field generik.                                                                                                                           | Brief meminta hotspot, luas hektare, organisasi, dan keluarga terdampak sebagai field sendiri. Sebagian nilai masih masuk kolom teks.                                                        |
+| Cluster peta kelas pustaka                                                                   | Cluster buatan sendiri berbasis jarak piksel.                                                                                                           | Pada jumlah marker besar, kelompok dan pecahannya belum setara pustaka cluster.                                                                                                              |
+| Realtime ujung ke ujung untuk setiap kejadian                                                | Kanal realtime ada. Tidak setiap perubahan incident mendorong isi kartu tanpa tarik data ulang.                                                         | Angka di kartu tidak dijamin berubah sendiri saat operator lain menyimpan.                                                                                                                   |
+| Anotasi di layar sentuh                                                                      | Belum diuji menyeluruh.                                                                                                                                 | Command center desktop aman. Tablet belum bisa dianggap selesai.                                                                                                                             |
+| Mode ekspor yang menyembunyikan seluruh chrome lalu memotret layout bersih untuk PDF laporan | Ekspor peta ada. Jalur BANGSIT belum memakai mode itu.                                                                                                  | Produk laporan presentasi masih terbelah antara dua halaman.                                                                                                                                 |
+| Struktur folder nasional Nextcloud `PUSDALOPS/NASIONAL/...`                                  | Tidak dipakai ATLAS lagi. Skrip ada di `/home/localhost/nexops/scripts/provision-kodam-folders.sh`.                                                     | Jangan menjalankan skrip itu kalau tujuannya hanya meneruskan ATLAS.                                                                                                                         |
+| `atlas-lan-watch.service` pada audit Agustus                                                 | Tidak menjadi bagian layanan yang diverifikasi hidup pada 30 September.                                                                                 | IP diganti manual. Jangan berharap IP mengikuti DHCP sendiri.                                                                                                                                |
 
 ## Yang harus dioptimalkan, dan alasannya
 
@@ -2657,3 +2657,33 @@ tidak ada baris error
 RINGKAS tidak ada baris error baru sejak 2026-10-20T08:44:46Z
 ```
 
+### 2026-10-21 21:17 — ekspor BANGSIT dan filter laporan di workstation pengembangan
+
+- Perubahan: sesi ini berjalan di workstation WSL, bukan di mesin operasi. Repo `https://github.com/noval1802/Atlas-V.0.0.1.git` di-clone ke `/home/wizard/Atlas-V.0.0.1` pada cabang `master` (HEAD `a5b5bce`). Node.js 22.23.4 dipasang di `/home/wizard/.local/node22` karena Node 20 membuat tiga tes gagal. PostgreSQL 18 lokal menyalakan database `atlas`, lalu `prisma migrate deploy` dan `prisma db seed` dijalankan. `src/lib/pptx-map-export.ts` diganti nama menjadi `src/lib/pptx-export.ts`; `buildMapPptx` dan `downloadMapPptx` menjadi `buildPptx` dan `downloadPptx` dengan parameter judul opsional, dipakai peta dan BANGSIT. `src/components/bangsit/bangsit-document.tsx` ditambahkan sebagai dokumen A4; halaman `/bangsit` memakainya untuk pratinjau dan ekspor. `reportFilterSchema` ditambahkan di `src/operations/schema.ts`; `GET /api/reports` menerima `from`, `to`, `kodamCode`, `type`, `status`, dan `q`; `src/components/reports/report-manager.tsx` menampilkan baris filter yang memanggil API. `package.json` memakai `tests/*.test.ts` untuk script `test`. `src/components/dashboard/incident-table.tsx` tidak lagi memanggil `setState` sinkron di dalam efek, dan prop `total` dipakai di footer tabel. Empat berkas preexisting (`README.md`, `docs/MIGRASI.md`, `src/documents/local-storage.ts`, `tests/document-storage.test.ts`) diformat ulang dengan Prettier. `e2e/bangsit-export-and-report-filter.spec.ts` ditambahkan. `/uploads/` ditambahkan ke `.gitignore` karena berisi PDF BANGSIT hasil uji. Belum di-commit dan belum di-push.
+- Fitur: tombol PNG dan PPTX di `/bangsit` aktif. PNG berukuran 1588 x 2246 piksel, PPTX berisi satu slide dengan gambar dokumen yang sama. Filter laporan mencakup rentang tanggal, Kodam, kategori, status, dan pencarian judul, kategori, atau ringkasan; filter berjalan di server dan tetap mengikuti scope Kodam.
+- Perbaikan: `npm test` gagal karena glob `tests/**/*.test.ts` tidak ter-expand di shell npm; sekarang 56 tes lulus. `npm run lint` gagal pada aturan `react-hooks/set-state-in-effect` di `incident-table.tsx`; sekarang lint bersih. `npm run format:check` gagal pada empat berkas; sekarang bersih. `npm run build` lulus. Uji browser Playwright untuk ekspor dan filter lulus.
+- Error layanan:
+
+```text
+## atlas-app
+container tidak ada
+
+## atlas-realtime
+container tidak ada
+
+## atlas-postgres
+container tidak ada
+
+## atlas-proxy
+container tidak ada
+
+## atlas-keycloak
+container tidak ada
+
+## atlas-keycloak-db
+container tidak ada
+
+RINGKAS ada baris error sejak 168h
+```
+
+Container ATLAS, Keycloak, dan Nextcloud tidak berjalan di workstation ini dan mesin operasi `192.168.2.132` tidak terjangkau dari jaringan workstation, jadi tidak ada baris error layanan yang bisa diambil. Langkah berikutnya: tinjau diff, lalu commit dan push ke `master` setelah kredensial push tersedia.
