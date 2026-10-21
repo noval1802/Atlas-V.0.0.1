@@ -18,7 +18,11 @@ function resolveInside(relativePath: string): { safe: string; absolute: string }
   return { safe, absolute };
 }
 
-function describe(relativePath: string, fileStat: { size: number; mtime: Date; isDirectory(): boolean }, mimeType?: string): StoredDocument {
+function describe(
+  relativePath: string,
+  fileStat: { size: number; mtime: Date; isDirectory(): boolean },
+  mimeType?: string,
+): StoredDocument {
   return {
     fileId: createHash("sha256").update(relativePath).digest("hex"),
     filename: relativePath.split("/").filter(Boolean).at(-1) ?? "",

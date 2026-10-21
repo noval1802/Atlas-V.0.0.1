@@ -43,6 +43,9 @@ yarn-error.log*
 # local runtime logs
 /logs/
 
+# berkas dokumen runtime (BANGSIT PDF, unggahan kejadian)
+/uploads/
+
 # penanda waktu pengumpulan log sesi
 .catatan-terakhir
 

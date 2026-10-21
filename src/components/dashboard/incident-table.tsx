@@ -1,6 +1,6 @@
 "use client";
 import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { incidents } from "@/data/dashboard";
 import type { Incident } from "@/types";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -40,12 +40,18 @@ export function IncidentTable({
     });
   }, [rows, sortDirection, sortKey]);
   const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
-  const visibleRows = sortedRows.slice((page - 1) * pageSize, page * pageSize);
-  useEffect(() => setPage(1), [q, filter, sortKey, sortDirection]);
-  useEffect(() => {
-    if (page > pageCount) setPage(pageCount);
-  }, [page, pageCount]);
+  const currentPage = Math.min(page, pageCount);
+  const visibleRows = sortedRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  function search(value: string) {
+    setQ(value);
+    setPage(1);
+  }
+  function changeFilter(value: string) {
+    setFilter(value);
+    setPage(1);
+  }
   function sortBy(key: typeof sortKey) {
+    setPage(1);
     if (sortKey === key) setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
     else {
       setSortKey(key);
@@ -63,7 +69,7 @@ export function IncidentTable({
           <Search size={13} className="text-slate-500" />
           <input
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => search(e.target.value)}
             placeholder="Cari kejadian..."
             className="h-8 w-full bg-transparent text-[11px] outline-none placeholder:text-slate-600"
           />
@@ -72,7 +78,7 @@ export function IncidentTable({
           <SlidersHorizontal size={13} />
           <select
             value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            onChange={(e) => changeFilter(e.target.value)}
             className="h-8 bg-transparent text-[10px] text-slate-300 outline-none"
           >
             <option>SEMUA</option>
@@ -143,12 +149,13 @@ export function IncidentTable({
       </div>
       <div className="flex items-center justify-between px-4 py-3 text-[10px] text-slate-500">
         <span>
-          Menampilkan {sortedRows.length === 0 ? 0 : (page - 1) * pageSize + 1}–
-          {Math.min(page * pageSize, sortedRows.length)} dari {sortedRows.length} kejadian
+          Menampilkan {sortedRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–
+          {Math.min(currentPage * pageSize, sortedRows.length)} dari {sortedRows.length} kejadian
+          {total !== sortedRows.length && ` (${total} total)`}
         </span>
         <div className="flex items-center gap-1">
           <button
-            disabled={page <= 1}
+            disabled={currentPage <= 1}
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             className="rounded border border-slate-800 p-1.5 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Halaman sebelumnya"
@@ -156,10 +163,10 @@ export function IncidentTable({
             <ChevronLeft size={13} />
           </button>
           <span className="rounded bg-cyan-400/10 px-2.5 py-1.5 text-cyan-300">
-            {page} / {pageCount}
+            {currentPage} / {pageCount}
           </span>
           <button
-            disabled={page >= pageCount}
+            disabled={currentPage >= pageCount}
             onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
             className="rounded border border-slate-800 p-1.5 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Halaman berikutnya"

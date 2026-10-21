@@ -11,13 +11,20 @@ test("penyimpanan lokal menulis file di dalam root dan menolak path di luar root
   process.env.DOCUMENT_STORAGE_DIR = root;
   try {
     const storage = new LocalDocumentStorage();
-    const stored = await storage.uploadFile("PUSDALOPS/KODAM_JAYA/catatan.txt", Buffer.from("siaga"), "text/plain");
+    const stored = await storage.uploadFile(
+      "PUSDALOPS/KODAM_JAYA/catatan.txt",
+      Buffer.from("siaga"),
+      "text/plain",
+    );
     assert.equal(stored.path, "PUSDALOPS/KODAM_JAYA/catatan.txt");
     assert.equal(stored.mimeType, "text/plain");
     const response = await storage.getFile(stored.path);
     assert.equal(await response.text(), "siaga");
     const listed = await storage.listFiles("PUSDALOPS/KODAM_JAYA");
-    assert.deepEqual(listed.map((item) => item.filename), ["catatan.txt"]);
+    assert.deepEqual(
+      listed.map((item) => item.filename),
+      ["catatan.txt"],
+    );
     await assert.rejects(() => storage.getFile("../rahasia.txt"));
   } finally {
     if (previous === undefined) delete process.env.DOCUMENT_STORAGE_DIR;
